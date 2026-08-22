@@ -5,7 +5,7 @@ export default {
     inputPlaceholder: 'Спросите что-нибудь...',
     errorMessage: 'Извините, произошла ошибка при связи с ИИ. Попробуйте позже.',
     logContextLine: 'Дата: {date}, Сахар: {sugar}, Примечание: {notes}',
-    systemPrompt: `Ты - медицинский ИИ-ассистент CyberBloom. 
+    systemPrompt: `Ты - медицинский ИИ-ассистент DiabEase. 
     Твоя задача: помогать пациентам с диабетом. 
     Отвечай вежливо, кратко и на русском языке. 
     Если пациент просит анализ, используй эти данные:\n{context}\n
@@ -18,7 +18,7 @@ export default {
     inputPlaceholder: 'Ask something...',
     errorMessage: 'Sorry, an error occurred while connecting to AI. Please try again later.',
     logContextLine: 'Date: {date}, Sugar: {sugar}, Notes: {notes}',
-    systemPrompt: `You are CyberBloom's medical AI assistant.
+    systemPrompt: `You are DiabEase's medical AI assistant.
     Your task: help patients with diabetes.
     Respond politely, briefly, and in English.
     If the patient asks for analysis, use this data:\n{context}\n
@@ -31,7 +31,7 @@ export default {
     inputPlaceholder: 'Бир нерсе сураңыз...',
     errorMessage: 'Кечиресиз, AI менен байланышууда ката кетти. Кийинчерээк кайра аракет кылыңыз.',
     logContextLine: 'Дата: {date}, Кандагы кант: {sugar}, Эскертүү: {notes}',
-    systemPrompt: `Ты - медицинский ИИ-ассистент CyberBloom. 
+    systemPrompt: `Ты - медицинский ИИ-ассистент DiabEase. 
     Твоя задача: помогать пациентам с диабетом. 
     Отвечай вежливо, кратко и на русском языке. 
     Если пациент просит анализ, используй эти данные:\n{context}\n

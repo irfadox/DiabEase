@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -103,7 +104,7 @@ export default function AuthScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <Text style={styles.logoText}>CB</Text>
+            <Image source={require('../assets/icon.png')} style={styles.logoImage} />
           </View>
           <Text style={[styles.title, { fontSize: getAdjustedFontSize(28) }]}>{isLogin ? t.welcomeBack : t.createAccount}</Text>
           <Text style={[styles.subtitle, { fontSize: getAdjustedFontSize(16) }]}>
@@ -255,12 +256,10 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   logoContainer: {
-    width: 60,
-    height: 60,
-    backgroundColor: '#00BFA5',
+    width: 72,
+    height: 72,
     borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
+    overflow: 'hidden',
     marginBottom: 20,
     elevation: 4,
     shadowColor: '#00BFA5',
@@ -268,10 +267,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
   },
-  logoText: {
-    color: 'white',
-    fontSize: 24,
-    fontWeight: 'bold',
+  logoImage: {
+    width: '100%',
+    height: '100%',
   },
   title: {
     fontSize: 28,

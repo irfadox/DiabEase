@@ -76,7 +76,7 @@ const getMockData = async (table) => {
         full_name: "dev_test_doctor",
         role: "doctor",
         phone_number: "111",
-        affiliation: "Клиника CyberBloom",
+        affiliation: "Клиника DiabEase",
         description: "Тестовый аккаунт врача"
       }
     ];
@@ -417,7 +417,7 @@ export const supabase = {
             full_name: fullName,
             role: role,
             phone_number: '111',
-            affiliation: role === 'doctor' ? 'Клиника CyberBloom' : null,
+            affiliation: role === 'doctor' ? 'Клиника DiabEase' : null,
             description: role === 'doctor' ? 'Тестовый аккаунт врача' : 'Тестовый аккаунт пациента'
           }
         };

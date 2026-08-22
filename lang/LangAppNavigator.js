@@ -1,6 +1,6 @@
 export default {
   ru: {
-    connecting: 'Подключение к CyberBloom...',
+    connecting: 'Подключение к DiabEase...',
     myPatients: 'Мои Пациенты',
     diary: 'Дневник',
     reminders: 'Напоминания',
@@ -8,7 +8,7 @@ export default {
     settings: 'Настройки',
   },
   en: {
-    connecting: 'Connecting to CyberBloom...',
+    connecting: 'Connecting to DiabEase...',
     myPatients: 'My Patients',
     diary: 'Diary',
     reminders: 'Reminders',
@@ -16,7 +16,7 @@ export default {
     settings: 'Settings',
   },
   ky: {
-    connecting: 'CyberBloomго туташуу...',
+    connecting: 'DiabEaseге туташуу...',
     myPatients: 'Менин бейтаптарым',
     diary: 'Күндөлүк',
     reminders: 'Эскертмелер',

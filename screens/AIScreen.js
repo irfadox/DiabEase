@@ -61,7 +61,7 @@ export default function AIScreen() {
             headers: {
                 "Authorization": `Bearer ${apiKey}`,
                 "HTTP-Referer": "https://cyberbloom.app",
-                "X-Title": "CyberBloom App",
+                "X-Title": "DiabEase App",
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
