@@ -2,7 +2,7 @@
   "expo": {
     "name": "DiabEase",
     "slug": "DeabEase",
-    "version": "1.0.0",
+    "version": "0.1.4",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -13,10 +13,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.kima.deabease"
+      "bundleIdentifier": "kg.com.diabease.app"
     },
     "android": {
-      "package": "com.kima.deabease",
+      "package": "kg.com.diabease.app",
       "adaptiveIcon": {
         "backgroundColor": "#00BFA5",
         "foregroundImage": "./assets/android-icon-foreground.png"
