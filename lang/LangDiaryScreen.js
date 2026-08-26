@@ -135,7 +135,7 @@ export default {
     emptyList: "Жазуулар азырынча жок",
     chartTitle: "Кант динамикасы",
     periodDay: "Күн",
-    periodWeek: "Апта",
+    periodWeek: "Жума",
     period1m: "1 ай",
     period3m: "3 ай",
     period6m: "6 ай",
