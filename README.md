@@ -57,7 +57,7 @@ Run setup_database.sql in the Supabase SQL editor to create tables, the new-user
    npm install
    ```
 
-3. Configure environment variables (copy .env.example to .env):
+3. Configure environment variables in .env:
 
    ```
    EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
