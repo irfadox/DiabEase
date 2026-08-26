@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { saveLog, getLogs, deleteLog } from '../utils/storage';
 import { Plus, Share2, Trash2, AlertTriangle } from 'lucide-react-native';
+import SugarTrendChart from '../components/SugarTrendChart';
 import * as Sharing from 'expo-sharing';
 import { supabase } from '../utils/supabase';
 import { useIsFocused } from '@react-navigation/native';
@@ -216,19 +217,24 @@ export default function DiaryScreen() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.historyHeader}>
-        <Text style={[styles.title, { fontSize: getAdjustedFontSize(22) }]}>{t.history}</Text>
-        <TouchableOpacity onPress={handleShare}>
-          <Share2 color="#00BFA5" size={24} />
-        </TouchableOpacity>
-      </View>
-
       <FlatList
         data={logs}
         renderItem={renderItem}
         keyExtractor={item => item.id.toString()}
         contentContainerStyle={styles.list}
+        ListHeaderComponent={
+          <View>
+            <SugarTrendChart logs={logs} />
+            <View style={styles.historyHeader}>
+              <Text style={[styles.title, { fontSize: getAdjustedFontSize(22) }]}>{t.history}</Text>
+              <TouchableOpacity onPress={handleShare}>
+                <Share2 color="#00BFA5" size={24} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        }
         ListEmptyComponent={<Text style={[styles.emptyText, { fontSize: getAdjustedFontSize(16) }]}>{t.emptyList}</Text>}
+        removeClippedSubviews={false}
       />
     </View>
   );
@@ -272,7 +278,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    paddingTop: 16,
     paddingBottom: 10,
   },
   title: {
