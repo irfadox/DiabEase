@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { supabase } from '../utils/supabase';
-import { User, MessageSquare, Phone, Info } from 'lucide-react-native';
+import { User, MessageSquare, Info } from 'lucide-react-native';
 import { useSettings } from '../context/SettingsContext';
 import { useLanguageContext } from '../context/LanguageContext';
 import LangPatientListScreen from '../lang/LangPatientListScreen';
@@ -51,19 +51,34 @@ export default function PatientListScreen({ navigation }) {
   };
 
   const renderPatient = ({ item }) => (
-    <TouchableOpacity 
-      style={styles.card}
-      onPress={() => navigation.navigate('Chat', { patientId: item.id, patientName: item.full_name })}
-    >
+    <View style={styles.card}>
       <View style={styles.avatar}>
         <User color="white" size={24} />
       </View>
       <View style={styles.info}>
-        <Text style={[styles.name, { fontSize: getAdjustedFontSize(16) }]}>{item.full_name}</Text>
-        <Text style={[styles.details, { fontSize: getAdjustedFontSize(13) }]}>{item.description || t.noDescription}</Text>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('PatientDetail', {
+            patientId: item.id,
+            patientName: item.full_name,
+          })}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.name, { fontSize: getAdjustedFontSize(16) }]}>{item.full_name}</Text>
+          <Text style={[styles.details, { fontSize: getAdjustedFontSize(13) }]}>{item.description || t.noDescription}</Text>
+        </TouchableOpacity>
       </View>
-      <MessageSquare color="#00BFA5" size={20} />
-    </TouchableOpacity>
+      <TouchableOpacity
+        onPress={() => navigation.navigate('PatientChat', {
+          patientId: item.id,
+          patientName: item.full_name,
+        })}
+        style={styles.chatButton}
+        accessibilityRole="button"
+        accessibilityLabel={t.openChat}
+      >
+        <MessageSquare color="#00BFA5" size={20} />
+      </TouchableOpacity>
+    </View>
   );
 
   return (
@@ -113,6 +128,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   info: { flex: 1 },
+  chatButton: { padding: 8, marginLeft: 8 },
   name: { fontSize: 16, fontWeight: '600', color: '#333' },
   details: { fontSize: 13, color: '#666', marginTop: 2 },
   emptyText: { textAlign: 'center', marginTop: 40, color: '#999', fontSize: 16 }

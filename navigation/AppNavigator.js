@@ -14,10 +14,11 @@ import DiaryScreen from '../screens/DiaryScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import RemindersScreen from '../screens/RemindersScreen';
 import ChatScreen from '../screens/ChatScreen';
-import AIScreen from '../screens/AIScreen';
 import AuthScreen from '../screens/AuthScreen';
 import PatientListScreen from '../screens/PatientListScreen';
+import PatientDetailScreen from '../screens/PatientDetailScreen';
 import AboutProjectScreen from '../screens/AboutProjectScreen';
+import LangPatientDetailScreen from '../lang/LangPatientDetailScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -189,6 +190,26 @@ export default function AppNavigator() {
             name="AboutProject"
             component={AboutProjectScreen}
             options={aboutScreenOptions}
+          />
+          <Stack.Screen
+            name="PatientDetail"
+            component={PatientDetailScreen}
+            options={({ route }) => ({
+              title: route.params?.patientName || LangPatientDetailScreen[language].screenTitle,
+              headerStyle: { backgroundColor: '#f8f9fa' },
+              headerTitleStyle: { fontWeight: '600' },
+              headerTintColor: '#00BFA5',
+            })}
+          />
+          <Stack.Screen
+            name="PatientChat"
+            component={ChatScreen}
+            options={({ route }) => ({
+              title: route.params?.patientName || t.chat,
+              headerStyle: { backgroundColor: '#f8f9fa' },
+              headerTitleStyle: { fontWeight: '600' },
+              headerTintColor: '#00BFA5',
+            })}
           />
         </Stack.Navigator>
       ) : (
