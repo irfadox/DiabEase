@@ -19,6 +19,7 @@ export default function ChatScreen({ route }) {
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState(null);
   const [partnerProfile, setPartnerProfile] = useState(null);
+  const [conversationError, setConversationError] = useState(null);
   const flatListRef = useRef();
 
   const targetId = route.params?.patientId || userProfile?.assigned_doctor_id;
@@ -28,20 +29,35 @@ export default function ChatScreen({ route }) {
   }, []);
 
   useEffect(() => {
-    if (targetId) {
-        fetchPartnerProfile();
-        loadHistory();
+    if (targetId && userProfile) {
+        let active = true;
+
+        const setupConversation = async () => {
+          const partner = await fetchPartnerProfile();
+          if (!active || !partner) return;
+
+          await loadHistory();
+        };
+
+        setupConversation();
         const channel = supabase
             .channel('chat_messages')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
                 if ((payload.new.sender_id === targetId && payload.new.receiver_id === userProfile?.id) ||
                     (payload.new.sender_id === userProfile?.id && payload.new.receiver_id === targetId)) {
-                    setMessages(prev => [...prev, payload.new]);
+                    setMessages(prev => (
+                      prev.some(message => message.id === payload.new.id)
+                        ? prev
+                        : [...prev, payload.new]
+                    ));
                 }
             })
             .subscribe();
 
-        return () => supabase.removeChannel(channel);
+        return () => {
+          active = false;
+          supabase.removeChannel(channel);
+        };
     }
   }, [targetId, userProfile]);
 
@@ -53,8 +69,30 @@ export default function ChatScreen({ route }) {
   };
 
   const fetchPartnerProfile = async () => {
-    const { data } = await supabase.from('profiles').select('*').eq('id', targetId).single();
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', targetId)
+      .maybeSingle();
+
+    const validRelationship = data && (
+      (userProfile?.role === 'patient' &&
+        userProfile.assigned_doctor_id === data.id &&
+        data.role === 'doctor') ||
+      (userProfile?.role === 'doctor' &&
+        data.role === 'patient' &&
+        data.assigned_doctor_id === userProfile.id)
+    );
+
+    if (error || !validRelationship) {
+      setPartnerProfile(null);
+      setConversationError(t.invalidConversation);
+      return null;
+    }
+
     setPartnerProfile(data);
+    setConversationError(null);
+    return data;
   };
 
   const loadHistory = async () => {
@@ -70,6 +108,7 @@ export default function ChatScreen({ route }) {
 
   const handleSend = async (isSOS = false) => {
     if (!inputText.trim() && !isSOS) return;
+    if (!userProfile || !targetId || !partnerProfile || conversationError) return;
 
     const text = isSOS ? t.sosMessage : inputText.trim();
     if (!isSOS) setInputText('');
@@ -125,6 +164,16 @@ export default function ChatScreen({ route }) {
 
   if (userProfile?.role === 'patient' && !userProfile?.assigned_doctor_id) {
     return <DoctorSelection onSelect={(id) => setUserProfile({...userProfile, assigned_doctor_id: id})} />;
+  }
+
+  if (conversationError) {
+    return (
+      <View style={styles.emptyState}>
+        <Text style={[styles.emptyStateText, { fontSize: getAdjustedFontSize(16) }]}>
+          {conversationError}
+        </Text>
+      </View>
+    );
   }
 
   return (
@@ -262,5 +311,16 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     zIndex: 100,
   },
-  sosText: { color: 'white', fontWeight: 'bold', fontSize: 12, marginTop: 2 }
+  sosText: { color: 'white', fontWeight: 'bold', fontSize: 12, marginTop: 2 },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#fff',
+  },
+  emptyStateText: {
+    color: '#666',
+    textAlign: 'center',
+  },
 });
