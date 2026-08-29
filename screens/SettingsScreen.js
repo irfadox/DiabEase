@@ -15,7 +15,9 @@ import {
   RotateCcw,
   Info,
   ChevronRight,
+  LogOut,
 } from "lucide-react-native";
+import { supabase } from "../utils/supabase";
 import { useSettings } from "../context/SettingsContext";
 import {
   useLanguageContext,
@@ -77,6 +79,20 @@ export default function SettingsScreen({ navigation }) {
 
   const handleResetFontSize = () => {
     setFontSize(16);
+  };
+
+  const handleLogout = () => {
+    Alert.alert(t.logoutTitle, t.logoutMessage, [
+      { text: common.cancel, style: "cancel" },
+      {
+        text: t.logout,
+        style: "destructive",
+        onPress: async () => {
+          const { error } = await supabase.auth.signOut();
+          if (error) Alert.alert(common.error, t.errorLogout);
+        },
+      },
+    ]);
   };
 
   const incrementFontSize = () => {
@@ -176,7 +192,7 @@ export default function SettingsScreen({ navigation }) {
               keyboardType="numeric"
               value={minLimit}
               onChangeText={setMinLimit}
-              placeholder="3.9"
+              placeholder={t.minimumPlaceholder}
             />
           </View>
 
@@ -189,7 +205,7 @@ export default function SettingsScreen({ navigation }) {
               keyboardType="numeric"
               value={maxLimit}
               onChangeText={setMaxLimit}
-              placeholder="7.8"
+              placeholder={t.maximumPlaceholder}
             />
           </View>
         </View>
@@ -283,6 +299,15 @@ export default function SettingsScreen({ navigation }) {
           style={[styles.saveButtonText, { fontSize: getAdjustedFontSize(18) }]}
         >
           {t.saveSettings}
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <LogOut size={18} color="#FF3B30" />
+        <Text
+          style={[styles.logoutButtonText, { fontSize: getAdjustedFontSize(16) }]}
+        >
+          {t.logout}
         </Text>
       </TouchableOpacity>
     </ScrollView>
@@ -456,5 +481,21 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: "white",
     fontWeight: "600",
+  },
+  logoutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#FFB2B2",
+    marginTop: 14,
+    marginBottom: 10,
+  },
+  logoutButtonText: {
+    color: "#D32F2F",
+    fontWeight: "600",
+    marginLeft: 8,
   },
 });

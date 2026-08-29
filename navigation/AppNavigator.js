@@ -31,6 +31,7 @@ export default function AppNavigator() {
   const [session, setSession] = useState(null);
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
+  const authInitializedRef = useRef(false);
   const lastErrorTime = useRef(0);
 
   useEffect(() => {
@@ -46,13 +47,17 @@ export default function AppNavigator() {
         else setLoading(false);
       } catch (err) {
         console.error('AppNavigator: Auth initialization failed:', err.message);
-        
-        if (err.message?.includes('Network') && session) {
-            console.warn('AppNavigator: Permanent network failure detected with active session. Clearing session.');
-            await supabase.auth.signOut();
-            setSession(null);
-            setRole(null);
+
+        try {
+          await supabase.auth.signOut();
+        } catch (signOutError) {
+          console.warn('AppNavigator: Could not clear invalid session:', signOutError.message);
         }
+        setSession(null);
+        setRole(null);
+      } finally {
+        authInitializedRef.current = true;
+        clearTimeout(safetyTimeout);
         setLoading(false);
       }
     };
@@ -67,6 +72,10 @@ export default function AppNavigator() {
     initializeAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!authInitializedRef.current) {
+        return;
+      }
+
       clearTimeout(safetyTimeout);
       console.log('AppNavigator: Event:', _event);
       setSession(session);

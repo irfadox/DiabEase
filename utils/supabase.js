@@ -14,6 +14,7 @@ const StorageAdapter = {
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+const mockBackendEnabled = typeof __DEV__ !== 'undefined' && __DEV__;
 
 const realSupabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -34,15 +35,20 @@ let currentSession = null;
 const listeners = [];
 const channelListeners = [];
 
-AsyncStorage.getItem('@mock_session').then(val => {
-  if (val) {
-    currentSession = JSON.parse(val);
-    listeners.forEach(cb => cb('SIGNED_IN', currentSession));
-  }
-});
+const mockSessionReady = mockBackendEnabled
+  ? AsyncStorage.getItem('@mock_session').then(val => {
+    if (val) {
+      currentSession = JSON.parse(val);
+      listeners.forEach(cb => cb('SIGNED_IN', currentSession));
+    }
+  })
+  : Promise.resolve();
 
 const isMockSession = () => {
-  return currentSession && (currentSession.access_token === 'mock-access-token' || String(currentSession.user?.id).startsWith('mock-'));
+  return mockBackendEnabled && currentSession && (
+    currentSession.access_token === 'mock-access-token' ||
+    String(currentSession.user?.id).startsWith('mock-')
+  );
 };
 
 const normalizeEmail = (email) => {
@@ -380,19 +386,22 @@ class MockQueryBuilder {
 export const supabase = {
   auth: {
     getSession: async () => {
-      if (currentSession) {
+      if (mockBackendEnabled) {
+        await mockSessionReady;
+      }
+      if (mockBackendEnabled && currentSession) {
         return { data: { session: currentSession }, error: null };
       }
       try {
         return await realSupabase.auth.getSession();
       } catch (e) {
         console.warn('Real Supabase getSession failed:', e.message);
-        return { data: { session: null }, error: null };
+        return { data: { session: null }, error: e };
       }
     },
     
     getUser: async () => {
-      if (currentSession) {
+      if (mockBackendEnabled && currentSession) {
         return { data: { user: currentSession.user }, error: null };
       }
       try {
@@ -405,7 +414,9 @@ export const supabase = {
 
     signInWithPassword: async ({ email, password }) => {
       const normalized = normalizeEmail(email);
-      if ((normalized === 'dev_test@example.com' || normalized === 'dev_test_doctor@example.com') && password === 'aidar') {
+      if (mockBackendEnabled &&
+          (normalized === 'dev_test@example.com' || normalized === 'dev_test_doctor@example.com') &&
+          password === 'aidar') {
         const role = normalized === 'dev_test@example.com' ? 'patient' : 'doctor';
         const userId = normalized === 'dev_test@example.com' ? 'mock-patient-id' : 'mock-doctor-id';
         const fullName = normalized === 'dev_test@example.com' ? 'dev_test' : 'dev_test_doctor';
@@ -439,14 +450,17 @@ export const supabase = {
 
     signUp: async ({ email, password, options }) => {
       const normalized = normalizeEmail(email);
-      if ((normalized === 'dev_test@example.com' || normalized === 'dev_test_doctor@example.com') && password === 'aidar') {
+      if (mockBackendEnabled &&
+          (normalized === 'dev_test@example.com' || normalized === 'dev_test_doctor@example.com') &&
+          password === 'aidar') {
         return supabase.auth.signInWithPassword({ email: normalized, password });
       }
       
       try {
         return await realSupabase.auth.signUp({ email, password, options });
       } catch (err) {
-        if (err.message?.includes('Network') || err.message?.includes('fetch failed')) {
+        if (mockBackendEnabled &&
+            (err.message?.includes('Network') || err.message?.includes('fetch failed'))) {
           console.warn('Real Supabase signUp failed due to network, creating mock account locally...');
           
           const role = options?.data?.role || 'patient';
@@ -495,7 +509,7 @@ export const supabase = {
     },
 
     signOut: async () => {
-      if (currentSession) {
+      if (mockBackendEnabled && currentSession) {
         currentSession = null;
         await AsyncStorage.removeItem('@mock_session');
         listeners.forEach(cb => cb('SIGNED_OUT', null));
@@ -519,7 +533,10 @@ export const supabase = {
         console.warn('Could not subscribe to real supabase auth change:', e.message);
       }
       
-      callback(currentSession ? 'SIGNED_IN' : 'SIGNED_OUT', currentSession);
+      callback(
+        mockBackendEnabled && currentSession ? 'SIGNED_IN' : 'SIGNED_OUT',
+        mockBackendEnabled ? currentSession : null
+      );
 
       return {
         data: {
@@ -545,6 +562,10 @@ export const supabase = {
   },
 
   channel: (name) => {
+    if (!isMockSession()) {
+      return realSupabase.channel(name);
+    }
+
     const myListeners = [];
     const channelObj = {
       on: (eventConfig, filterConfig, callback) => {
@@ -572,7 +593,9 @@ export const supabase = {
           channelListeners.splice(idx, 1);
         }
       });
+      return;
     }
+    return realSupabase.removeChannel(chan);
   }
 };
 

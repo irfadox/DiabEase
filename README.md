@@ -12,7 +12,6 @@ DiabEase is a mobile app designed to help people with diabetes and their doctors
 - **DiaryScreen.js**: Patients log blood sugar values and meal notes. Entries are classified as low / normal / high based on user-defined limits. A warning banner appears for out-of-range values. Patients can share a report of recent logs with their assigned doctor via the chat system.
 - **RemindersScreen.js**: Users create timed reminders (medications, glucose checks, etc.). Local notifications are scheduled with Expo Notifications.
 - **ChatScreen.js**: Real-time messaging between a patient and their assigned doctor. Patients can select a doctor, send reports, place phone calls, or trigger an SOS message. Doctors see their patients and open chats.
-- **AIScreen.js** _Removed for safety (AI hallucination risk)_: An AI chat powered by DeepSeek (via OpenRouter). The model receives the user's last 5 diary entries as context and returns polished, readable advice. Responses always emphasize consulting a real doctor.
 - **PatientListScreen.js**: Doctor-only view of assigned patients with quick access to their profiles and chats.
 - **SettingsScreen.js**: Adjust target blood-sugar range, font size, and interface language (Russian, English, Kyrgyz).
 - **AboutProjectScreen.js**: App description and overview of each section.
@@ -29,7 +28,7 @@ DiabEase is a mobile app designed to help people with diabetes and their doctors
 - **React Navigation** (bottom tabs + native stack)
 - **Supabase** (PostgreSQL + Auth) for backend, profiles, logs, reminders, and messages
 - **Expo Notifications** for local reminders
-- **Expo SecureStore** for sensitive tokens
+- **AsyncStorage** for Supabase session persistence and local preferences
 - **Lucide React Native** for icons
 - **Multi-language support** (Russian, English, Kyrgyz) with a React Native adaptation of [react-language-switcher](https://github.com/aidartheklutz/react-language-switcher)
 
@@ -62,7 +61,6 @@ Run setup_database.sql in the Supabase SQL editor to create tables, the new-user
    ```
    EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
    EXPO_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-   EXPO_PUBLIC_OPENROUTER_API_KEY=your_openrouter_key
    ```
 
 4. Start the development server:

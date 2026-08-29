@@ -11,6 +11,7 @@ import {
 import { MessageSquare, User } from 'lucide-react-native';
 import { supabase } from '../utils/supabase';
 import SugarTrendChart from '../components/SugarTrendChart';
+import GlucoseHistoryTable from '../components/GlucoseHistoryTable';
 import { useSettings } from '../context/SettingsContext';
 import { useLanguageContext } from '../context/LanguageContext';
 import LangPatientDetailScreen from '../lang/LangPatientDetailScreen';
@@ -18,6 +19,7 @@ import LangDiaryScreen, { getStatusLabel } from '../lang/LangDiaryScreen';
 import LangCommon from '../lang/LangCommon';
 
 const LOCALE_MAP = { ru: 'ru-RU', en: 'en-US', ky: 'ky-KG' };
+const getNoteText = (notes, fallback) => !notes || notes === '-' ? fallback : notes;
 
 export default function PatientDetailScreen({ route, navigation }) {
   const { patientId, patientName } = route.params || {};
@@ -36,6 +38,54 @@ export default function PatientDetailScreen({ route, navigation }) {
     navigation.setOptions({ title: patientName || t.screenTitle });
     loadPatientData();
   }, [navigation, patientId, language]);
+
+  useEffect(() => {
+    if (!patientId) return undefined;
+
+    const channel = supabase
+      .channel(`patient_logs_${patientId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'logs',
+          filter: `user_id=eq.${patientId}`,
+        },
+        (payload) => {
+          if (payload.new?.user_id !== patientId) return;
+
+          setLogs((previousLogs) => {
+            if (previousLogs.some((log) => String(log.id) === String(payload.new.id))) {
+              return previousLogs;
+            }
+
+            return [payload.new, ...previousLogs].sort(
+              (first, second) => new Date(second.timestamp) - new Date(first.timestamp)
+            );
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [patientId]);
+
+  const fetchPatientLogs = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { data, error } = await supabase
+      .from('logs')
+      .select('*')
+      .eq('user_id', patientId)
+      .order('timestamp', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  };
 
   const loadPatientData = async () => {
     if (!patientId) {
@@ -58,13 +108,7 @@ export default function PatientDetailScreen({ route, navigation }) {
 
       if (patientError || !patientData) throw patientError || new Error('Patient not found');
 
-      const { data: logData, error: logError } = await supabase
-        .from('logs')
-        .select('*')
-        .eq('user_id', patientId)
-        .order('timestamp', { ascending: false });
-
-      if (logError) throw logError;
+      const logData = await fetchPatientLogs();
 
       setPatient(patientData);
       setLogs(logData || []);
@@ -157,6 +201,12 @@ export default function PatientDetailScreen({ route, navigation }) {
         )}
       </View>
 
+      <GlucoseHistoryTable
+        logs={logs}
+        patientName={patient.full_name}
+        fetchLogsForExport={fetchPatientLogs}
+      />
+
       <Text style={[styles.sectionTitle, { fontSize: getAdjustedFontSize(20) }]}>
         {t.recentEntries}
       </Text>
@@ -179,7 +229,7 @@ export default function PatientDetailScreen({ route, navigation }) {
               {diaryText.sugarLabel} {log.sugar_level} {diaryText.unit}
             </Text>
             <Text style={[styles.logText, { fontSize: getAdjustedFontSize(15) }]}>
-              {diaryText.foodLabel} {log.notes || '-'}
+              {diaryText.foodLabel} {getNoteText(log.notes, diaryText.noNotes)}
             </Text>
           </View>
         ))

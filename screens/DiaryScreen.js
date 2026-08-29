@@ -1,17 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { saveLog, getLogs, deleteLog } from '../utils/storage';
-import { Plus, Share2, Trash2, AlertTriangle } from 'lucide-react-native';
+import { Plus, Share2, Trash2, AlertTriangle, Table2 } from 'lucide-react-native';
 import SugarTrendChart from '../components/SugarTrendChart';
-import * as Sharing from 'expo-sharing';
 import { supabase } from '../utils/supabase';
 import { useIsFocused } from '@react-navigation/native';
 import { useSettings } from '../context/SettingsContext';
 import { useLanguageContext } from '../context/LanguageContext';
 import LangDiaryScreen, { getStatusLabel } from '../lang/LangDiaryScreen';
 import LangCommon from '../lang/LangCommon';
+import GlucoseHistoryTable from '../components/GlucoseHistoryTable';
 
 const LOCALE_MAP = { ru: 'ru-RU', en: 'en-US', ky: 'ky-KG' };
+const getNoteText = (notes, fallback) => !notes || notes === '-' ? fallback : notes;
 
 export default function DiaryScreen() {
   const [logs, setLogs] = useState([]);
@@ -19,6 +20,7 @@ export default function DiaryScreen() {
   const [food, setFood] = useState('');
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState(null);
+  const [showHistoryTable, setShowHistoryTable] = useState(false);
 
   const { minLimit, maxLimit, getAdjustedFontSize } = useSettings();
   const { language } = useLanguageContext();
@@ -47,6 +49,12 @@ export default function DiaryScreen() {
     setLoading(false);
   };
 
+  const fetchOwnLogsForExport = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+    return getLogs();
+  };
+
   const handleAddLog = async () => {
     if (!sugar && !food) {
       Alert.alert(common.error, t.errorEmpty);
@@ -62,7 +70,7 @@ export default function DiaryScreen() {
 
     const newLogData = {
       value: sugar || '0',
-      notes: food || '-',
+      notes: food || '',
       status,
     };
 
@@ -102,7 +110,7 @@ export default function DiaryScreen() {
                     logs.map(l => t.reportLine
                       .replace('{time}', new Date(l.timestamp).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }))
                       .replace('{sugar}', l.sugar_level)
-                      .replace('{notes}', l.notes)
+                      .replace('{notes}', getNoteText(l.notes, t.noNotes))
                     ).join('\n');
                 
                 const { error } = await supabase.from('messages').insert([{
@@ -189,7 +197,7 @@ export default function DiaryScreen() {
         </TouchableOpacity>
       </View>
       <Text style={[styles.logLabel, { fontSize: getAdjustedFontSize(16) }]}>{t.sugarLabel} <Text style={[styles.logValue, { fontSize: getAdjustedFontSize(16) }]}>{item.sugar_level} {t.unit}</Text></Text>
-      <Text style={[styles.logLabel, { fontSize: getAdjustedFontSize(16) }]}>{t.foodLabel} <Text style={[styles.logValue, { fontSize: getAdjustedFontSize(16) }]}>{item.notes}</Text></Text>
+      <Text style={[styles.logLabel, { fontSize: getAdjustedFontSize(16) }]}>{t.foodLabel} <Text style={[styles.logValue, { fontSize: getAdjustedFontSize(16) }]}>{getNoteText(item.notes, t.noNotes)}</Text></Text>
     </View>
   );
 
@@ -217,25 +225,45 @@ export default function DiaryScreen() {
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={logs}
-        renderItem={renderItem}
-        keyExtractor={item => item.id.toString()}
-        contentContainerStyle={styles.list}
-        ListHeaderComponent={
-          <View>
-            <SugarTrendChart logs={logs} />
-            <View style={styles.historyHeader}>
-              <Text style={[styles.title, { fontSize: getAdjustedFontSize(22) }]}>{t.history}</Text>
-              <TouchableOpacity onPress={handleShare}>
-                <Share2 color="#00BFA5" size={24} />
-              </TouchableOpacity>
+      {showHistoryTable ? (
+        <GlucoseHistoryTable
+          logs={logs}
+          patientName={userProfile?.full_name}
+          fetchLogsForExport={fetchOwnLogsForExport}
+          onClose={() => setShowHistoryTable(false)}
+        />
+      ) : (
+        <FlatList
+          data={logs}
+          renderItem={renderItem}
+          keyExtractor={item => item.id.toString()}
+          contentContainerStyle={styles.list}
+          ListHeaderComponent={
+            <View>
+              <SugarTrendChart logs={logs} />
+              <View style={styles.historyHeader}>
+                <Text style={[styles.title, { fontSize: getAdjustedFontSize(22) }]}>{t.history}</Text>
+                <View style={styles.historyActions}>
+                  <TouchableOpacity
+                    style={styles.viewToggle}
+                    onPress={() => setShowHistoryTable(true)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t.showHistoryTable}
+                  >
+                    <Table2 color="#00BFA5" size={18} />
+                    <Text style={[styles.viewToggleText, { fontSize: getAdjustedFontSize(12) }]}>{t.showHistoryTable}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={handleShare} accessibilityRole="button" accessibilityLabel={t.shareReportTitle}>
+                    <Share2 color="#00BFA5" size={24} />
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
-          </View>
-        }
-        ListEmptyComponent={<Text style={[styles.emptyText, { fontSize: getAdjustedFontSize(16) }]}>{t.emptyList}</Text>}
-        removeClippedSubviews={false}
-      />
+          }
+          ListEmptyComponent={<Text style={[styles.emptyText, { fontSize: getAdjustedFontSize(16) }]}>{t.emptyList}</Text>}
+          removeClippedSubviews={false}
+        />
+      )}
     </View>
   );
 }
@@ -280,6 +308,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 16,
     paddingBottom: 10,
+  },
+  historyActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  viewToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#00BFA5',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  viewToggleText: {
+    color: '#00BFA5',
+    fontWeight: '600',
+    marginLeft: 4,
   },
   title: {
     fontSize: 22,
