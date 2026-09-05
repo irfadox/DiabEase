@@ -13,15 +13,19 @@ const StorageAdapter = {
   removeItem: (key) => AsyncStorage.removeItem(key),
 };
 
-const extra = Constants.expoConfig?.extra ?? {};
+const extra =
+  Constants.expoConfig?.extra ||
+  Constants.manifest?.extra ||
+  Constants.manifest2?.extra?.expoClient?.extra ||
+  {};
 const supabaseUrl =
-  process.env.EXPO_PUBLIC_SUPABASE_URL || extra.supabaseUrl || '';
+  extra.supabaseUrl || process.env.EXPO_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey =
-  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || extra.supabaseAnonKey || '';
+  extra.supabaseAnonKey || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error(
-    'Missing Supabase config. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in .env for Expo Go, and as EAS environment variables for release builds.'
+    'Missing Supabase config. Ensure .env defines EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY, then rebuild.'
   );
 }
 const mockBackendEnabled = typeof __DEV__ !== 'undefined' && __DEV__;

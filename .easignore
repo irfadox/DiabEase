@@ -1,0 +1,46 @@
+# Copy of .gitignore, with .env re-included at the bottom so EAS
+# Build can inline EXPO_PUBLIC_* the same way Expo Go does locally.
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+# generated native folders
+/ios
+/android
+
+# Upload the project .env so release builds have the same public
+# Supabase URL and anon key as Expo Go. Keep this last so it wins.
+!.env
