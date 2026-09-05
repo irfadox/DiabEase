@@ -9,6 +9,8 @@ import { useLanguageContext } from '../context/LanguageContext';
 import LangRemindersScreen from '../lang/LangRemindersScreen';
 import LangCommon from '../lang/LangCommon';
 
+const REMINDER_CHANNEL_ID = 'reminders';
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -16,6 +18,34 @@ Notifications.setNotificationHandler({
     shouldSetBadge: false,
   }),
 });
+
+async function ensureNotificationSetup() {
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync(REMINDER_CHANNEL_ID, {
+      name: 'Reminders',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      sound: 'default',
+      enableVibrate: true,
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+    });
+  }
+
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  let finalStatus = existingStatus;
+  if (existingStatus !== 'granted') {
+    const { status } = await Notifications.requestPermissionsAsync({
+      ios: {
+        allowAlert: true,
+        allowBadge: true,
+        allowSound: true,
+      },
+    });
+    finalStatus = status;
+  }
+
+  return finalStatus === 'granted';
+}
 
 export default function RemindersScreen() {
   const { getAdjustedFontSize } = useSettings();
@@ -32,15 +62,12 @@ export default function RemindersScreen() {
 
   useEffect(() => {
     loadReminders();
-    requestPermissions();
+    ensureNotificationSetup().then((granted) => {
+      if (!granted) {
+        Alert.alert(common.error, t.errorPermission);
+      }
+    });
   }, []);
-
-  const requestPermissions = async () => {
-    const { status } = await Notifications.requestPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert(common.error, t.errorPermission);
-    }
-  };
 
   const loadReminders = async () => {
     setLoading(true);
@@ -72,18 +99,27 @@ export default function RemindersScreen() {
       return;
     }
 
-    if (date < new Date()) {
+    if (date <= new Date()) {
         Alert.alert(common.error, t.errorPastTime);
         return;
+    }
+
+    const granted = await ensureNotificationSetup();
+    if (!granted) {
+      Alert.alert(common.error, t.errorPermission);
+      return;
     }
 
     await Notifications.scheduleNotificationAsync({
       content: {
         title: t.notificationTitle,
         body: text,
+        sound: true,
+        priority: Notifications.AndroidNotificationPriority.HIGH,
       },
       trigger: {
-        date: date,
+        date: date.getTime(),
+        channelId: REMINDER_CHANNEL_ID,
       },
     });
 
