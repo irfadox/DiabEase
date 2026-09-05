@@ -176,7 +176,7 @@ export default function RemindersScreen() {
             value={date}
             mode={mode}
             is24Hour={true}
-            display="default"
+            display={Platform.OS === 'android' ? 'spinner' : 'default'}
             onChange={onChange}
           />
         )}
