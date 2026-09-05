@@ -166,7 +166,7 @@ export default function RemindersScreen() {
             <TouchableOpacity style={styles.pickerButton} onPress={() => showMode('time')}>
                 <Clock size={20} color="#00BFA5" />
                 <Text style={[styles.pickerButtonText, { fontSize: getAdjustedFontSize(16) }]}>
-                    {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
                 </Text>
             </TouchableOpacity>
         </View>
