@@ -34,7 +34,7 @@ export default function AboutProjectScreen() {
           {t.appName}
         </Text>
         <Text style={[styles.version, { fontSize: getAdjustedFontSize(13) }]}>
-          {t.version} v0.1.4
+          {t.version} v0.1.6
         </Text>
       </View>
 
