@@ -28,7 +28,7 @@ CREATE TABLE reminders (
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   title TEXT,
   time TEXT, -- Stores ISO string or specific format
-  type TEXT,
+  type TEXT, -- JSON metadata: { mode: 'once'|'weekly', days: number[] } (JS weekday: 0=Sun)
   completed BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );

@@ -10,7 +10,7 @@ DiabEase is a mobile app designed to help people with diabetes and their doctors
 
 - **AuthScreen.js**: Users create an account or sign in. Accounts are role-based (patient or doctor). Profile data (name, phone, affiliation, description) is stored in Supabase.
 - **DiaryScreen.js**: Patients log blood sugar values and meal notes. Entries are classified as low / normal / high based on user-defined limits. A warning banner appears for out-of-range values. Patients can share a report of recent logs with their assigned doctor via the chat system.
-- **RemindersScreen.js**: Users create timed reminders (medications, glucose checks, etc.). Local notifications are scheduled with Expo Notifications.
+- **RemindersScreen.js**: Users create one-time or repeating reminders (medications, glucose checks, etc.). Repeating reminders fire on selected weekdays. Local notifications are scheduled with Expo Notifications.
 - **ChatScreen.js**: Real-time messaging between a patient and their assigned doctor. Patients can select a doctor, send reports, place phone calls, or trigger an SOS message. Doctors see their patients and open chats.
 - **PatientListScreen.js**: Doctor-only view of assigned patients with quick access to their profiles and chats.
 - **SettingsScreen.js**: Adjust target blood-sugar range, font size, and interface language (Russian, English, Kyrgyz).
@@ -36,7 +36,7 @@ DiabEase is a mobile app designed to help people with diabetes and their doctors
 
 - **profiles** – users (patients & doctors), role, phone, assigned_doctor_id, affiliation, description
 - **logs** – sugar readings + notes + status + timestamp
-- **reminders** – title, time, type, completed flag
+- **reminders** – title, time, type, completed flag. `type` stores JSON metadata: `{ mode: 'once'|'weekly', days: number[] }` (JS weekday: 0 is Sunday)
 - **messages** – chat messages with is_sos and is_system flags
 
 Run setup_database.sql in the Supabase SQL editor to create tables, the new-user trigger, and required columns.

@@ -79,7 +79,8 @@ export const addReminder = async (reminder) => {
                 time: reminder.time,
                 type: reminder.type,
                 completed: false
-            }]);
+            }])
+            .select();
         if (error) throw error;
         return data;
     } catch (e) {

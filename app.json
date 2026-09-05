@@ -18,7 +18,8 @@
     "android": {
       "package": "kg.com.diabease.app",
       "adaptiveIcon": {
-        "backgroundColor": "#00BFA5",
+        "backgroundColor": "#CCFFF7",
+        "backgroundImage": "./assets/android-icon-background.png",
         "foregroundImage": "./assets/android-icon-foreground.png"
       },
       "permissions": [
