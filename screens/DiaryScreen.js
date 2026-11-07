@@ -10,6 +10,7 @@ import { useLanguageContext } from '../context/LanguageContext';
 import LangDiaryScreen, { getStatusLabel } from '../lang/LangDiaryScreen';
 import LangCommon from '../lang/LangCommon';
 import GlucoseHistoryTable from '../components/GlucoseHistoryTable';
+import { createShadow } from '../utils/webStyles';
 
 const LOCALE_MAP = { ru: 'ru-RU', en: 'en-US', ky: 'ky-KG' };
 const getNoteText = (notes, fallback) => !notes || notes === '-' ? fallback : notes;
@@ -350,11 +351,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     borderWidth: 1,
     borderColor: '#eee',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    ...createShadow(0, 2, 4, 'rgba(0,0,0,0.08)', 0.1, 2),
   },
   logHeader: {
     flexDirection: 'row',

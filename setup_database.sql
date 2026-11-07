@@ -13,17 +13,18 @@ CREATE TABLE profiles (
 );
 
 -- 2. Logs table (Sugar levels, diet, etc.)
-CREATE TABLE logs (
+CREATE TABLE IF NOT EXISTS logs (
   id BIGSERIAL PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   sugar_level DECIMAL,
   notes TEXT,
   status TEXT, -- 'Высокий', 'Норма', 'Низкий'
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
   timestamp TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
 -- 3. Reminders table
-CREATE TABLE reminders (
+CREATE TABLE IF NOT EXISTS reminders (
   id BIGSERIAL PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   title TEXT,
@@ -35,13 +36,14 @@ CREATE TABLE reminders (
 
 -- 4. Chat Messages
 -- UPDATE: Added is_sos and is_system for special alerts
-CREATE TABLE messages (
+CREATE TABLE IF NOT EXISTS messages (
   id BIGSERIAL PRIMARY KEY,
   sender_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   receiver_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   text TEXT,
   is_sos BOOLEAN DEFAULT FALSE,
   is_system BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
   timestamp TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
@@ -231,14 +233,55 @@ CREATE POLICY messages_insert_linked
     AND private.are_linked_users(sender_id, receiver_id)
   );
 
+-- Safe doctor directory view to prevent harvesting of personal doctor emails and phone numbers
+CREATE OR REPLACE VIEW public.doctor_directory
+WITH (security_invoker = true) AS
+  SELECT id, full_name, affiliation, description
+  FROM public.profiles
+  WHERE role = 'doctor';
+
+GRANT SELECT ON public.doctor_directory TO authenticated;
+
+-- Timestamp & created_at synchronization trigger
+CREATE OR REPLACE FUNCTION public.sync_timestamp_columns()
+RETURNS trigger AS $$
+BEGIN
+  IF NEW.created_at IS NULL AND NEW.timestamp IS NOT NULL THEN
+    NEW.created_at := NEW.timestamp;
+  ELSIF NEW.timestamp IS NULL AND NEW.created_at IS NOT NULL THEN
+    NEW.timestamp := NEW.created_at;
+  ELSIF NEW.created_at IS NULL AND NEW.timestamp IS NULL THEN
+    NEW.created_at := timezone('utc'::text, now());
+    NEW.timestamp := NEW.created_at;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_sync_logs_timestamp ON public.logs;
+CREATE TRIGGER trg_sync_logs_timestamp
+  BEFORE INSERT OR UPDATE ON public.logs
+  FOR EACH ROW EXECUTE PROCEDURE public.sync_timestamp_columns();
+
+DROP TRIGGER IF EXISTS trg_sync_messages_timestamp ON public.messages;
+CREATE TRIGGER trg_sync_messages_timestamp
+  BEFORE INSERT OR UPDATE ON public.messages
+  FOR EACH ROW EXECUTE PROCEDURE public.sync_timestamp_columns();
+
 CREATE INDEX IF NOT EXISTS profiles_assigned_doctor_idx
   ON profiles (assigned_doctor_id);
 
 CREATE INDEX IF NOT EXISTS logs_user_timestamp_idx
   ON logs (user_id, timestamp DESC);
 
+CREATE INDEX IF NOT EXISTS logs_user_created_at_idx
+  ON logs (user_id, created_at DESC);
+
 CREATE INDEX IF NOT EXISTS messages_participants_timestamp_idx
   ON messages (sender_id, receiver_id, timestamp ASC);
+
+CREATE INDEX IF NOT EXISTS messages_participants_created_at_idx
+  ON messages (sender_id, receiver_id, created_at ASC);
 
 -- 6. Realtime publications for logs and messages (idempotent configuration)
 ALTER TABLE logs REPLICA IDENTITY FULL;

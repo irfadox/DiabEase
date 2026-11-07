@@ -23,6 +23,27 @@ import LangPatientDetailScreen from '../lang/LangPatientDetailScreen';
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
+const linking = {
+  prefixes: ['https://diabease.app', 'diabease://', '/'],
+  config: {
+    screens: {
+      Main: {
+        screens: {
+          Patients: 'patients',
+          Diary: 'diary',
+          Reminders: 'reminders',
+          Chat: 'chat',
+          Settings: 'settings',
+        },
+      },
+      PatientDetail: 'patients/:patientId',
+      PatientChat: 'chat/:patientId',
+      AboutProject: 'about',
+      Auth: 'auth',
+    },
+  },
+};
+
 const isNetworkError = (err) => {
   if (!err) return false;
   const msg = String(err.message || '').toLowerCase();
@@ -297,7 +318,7 @@ export default function AppNavigator() {
   );
 
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking}>
       {session ? (
         <Stack.Navigator>
           <Stack.Screen

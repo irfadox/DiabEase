@@ -26,6 +26,8 @@ import {
 import LangSettingsScreen from "../lang/LangSettingsScreen";
 import LangCommon from "../lang/LangCommon";
 import LanguageSwitcher from "../components/LanguageSwitcher";
+import ResponsiveContainer from "../components/ResponsiveContainer";
+import { createShadow } from "../utils/webStyles";
 
 export default function SettingsScreen({ navigation }) {
   const {
@@ -115,7 +117,8 @@ export default function SettingsScreen({ navigation }) {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ResponsiveContainer maxWidth={900} style={styles.outerContainer}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <TouchableOpacity
         style={styles.aboutLink}
         onPress={() => navigation.navigate("AboutProject")}
@@ -318,13 +321,18 @@ export default function SettingsScreen({ navigation }) {
         </Text>
       </TouchableOpacity>
     </ScrollView>
+    </ResponsiveContainer>
   );
 }
 
 const styles = StyleSheet.create({
+  outerContainer: {
+    backgroundColor: "#fff",
+  },
   container: {
     flex: 1,
     backgroundColor: "#fff",
+    width: "100%",
   },
   aboutLink: {
     flexDirection: "row",
@@ -426,11 +434,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     justifyContent: "center",
     alignItems: "center",
-    elevation: 1,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 1,
+    ...createShadow(0, 1, 2, "rgba(0,0,0,0.08)", 0.1, 1),
   },
   stepperButtonDisabled: {
     backgroundColor: "#f1f1f1",
@@ -479,11 +483,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    ...createShadow(0, 2, 4, "rgba(0,191,165,0.25)", 0.15, 2),
   },
   saveButtonText: {
     color: "white",
