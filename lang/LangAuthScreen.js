@@ -2,6 +2,8 @@ export default {
   ru: {
     errorFillFields: 'Пожалуйста, заполните основные поля.',
     errorFillNamePhone: 'Введите ФИО и номер телефона.',
+    errorAccountExists: 'Пользователь с таким email уже существует.',
+    confirmEmailNotice: 'Аккаунт создан! Пожалуйста, проверьте почту для подтверждения перед входом.',
     successAccountCreated: 'Аккаунт создан! Пожалуйста, проверьте почту (или просто войдите).',
     errorAuth: 'Ошибка авторизации',
     welcomeBack: 'С возвращением',
@@ -27,6 +29,8 @@ export default {
   en: {
     errorFillFields: 'Please fill in the required fields.',
     errorFillNamePhone: 'Enter your full name and phone number.',
+    errorAccountExists: 'A user with this email already exists.',
+    confirmEmailNotice: 'Account created! Please check your email to confirm your account before signing in.',
     successAccountCreated: 'Account created! Please check your email (or just sign in).',
     errorAuth: 'Authentication error',
     welcomeBack: 'Welcome back',
@@ -52,6 +56,8 @@ export default {
   ky: {
     errorFillFields: 'Сураныч, негизги талааларды толтуруңуз.',
     errorFillNamePhone: 'Аты-жөнүңүздү жана телефон номериңизди киргизиңиз.',
+    errorAccountExists: 'Бул электрондук почта менен колдонуучу мурунтан эле бар.',
+    confirmEmailNotice: 'Аккаунт түзүлдү! Кирүүдөн мурун электрондук почтаңызды текшерип, ырастаңыз.',
     successAccountCreated: 'Аккаунт түзүлдү! Электрондук почтаңызды текшериңиз (же жөн гана системага кириңиз).',
     errorAuth: 'Авторизация катасы',
     welcomeBack: 'Кайра кош келиңиз',
