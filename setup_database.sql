@@ -54,20 +54,35 @@ ALTER TABLE messages ADD COLUMN IF NOT EXISTS is_system BOOLEAN DEFAULT FALSE;
 */
 
 -- TRIGGER FOR NEW USER PROFILE
--- UPDATE: Handle phone_number from metadata
+-- UPDATE: Handle phone_number and safe role validation from metadata
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
+DECLARE
+  assigned_role TEXT;
 BEGIN
+  -- Validate role from metadata: only 'doctor' or 'patient' permitted; default safely to 'patient'
+  assigned_role := CASE
+    WHEN new.raw_user_meta_data->>'role' = 'doctor' THEN 'doctor'
+    ELSE 'patient'
+  END;
+
   INSERT INTO public.profiles (id, email, full_name, role, phone_number, affiliation, description)
   VALUES (
     new.id, 
     new.email, 
-    new.raw_user_meta_data->>'full_name', 
-    new.raw_user_meta_data->>'role',
+    COALESCE(NULLIF(new.raw_user_meta_data->>'full_name', ''), 'Пользователь'), 
+    assigned_role,
     new.raw_user_meta_data->>'phone_number',
-    new.raw_user_meta_data->>'affiliation',
+    CASE WHEN assigned_role = 'doctor' THEN new.raw_user_meta_data->>'affiliation' ELSE NULL END,
     new.raw_user_meta_data->>'description'
-  );
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    email = EXCLUDED.email,
+    full_name = COALESCE(EXCLUDED.full_name, profiles.full_name),
+    phone_number = COALESCE(EXCLUDED.phone_number, profiles.phone_number),
+    affiliation = COALESCE(EXCLUDED.affiliation, profiles.affiliation),
+    description = COALESCE(EXCLUDED.description, profiles.description);
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
@@ -224,3 +239,26 @@ CREATE INDEX IF NOT EXISTS logs_user_timestamp_idx
 
 CREATE INDEX IF NOT EXISTS messages_participants_timestamp_idx
   ON messages (sender_id, receiver_id, timestamp ASC);
+
+-- 6. Realtime publications for logs and messages (idempotent configuration)
+ALTER TABLE logs REPLICA IDENTITY FULL;
+ALTER TABLE messages REPLICA IDENTITY FULL;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_publication_tables 
+      WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'logs'
+    ) THEN
+      ALTER PUBLICATION supabase_realtime ADD TABLE public.logs;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_publication_tables 
+      WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'messages'
+    ) THEN
+      ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
+    END IF;
+  END IF;
+END $$;
