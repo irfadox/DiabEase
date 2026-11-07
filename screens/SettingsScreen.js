@@ -70,7 +70,14 @@ export default function SettingsScreen({ navigation }) {
       await updateFontSize(fontSize);
 
       Alert.alert(common.success, t.successSaved, [
-        { text: common.ok, onPress: () => navigation.navigate("Diary") },
+        {
+          text: common.ok,
+          onPress: () => {
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+            }
+          },
+        },
       ]);
     } catch (e) {
       Alert.alert(common.error, t.errorSaveFailed);
