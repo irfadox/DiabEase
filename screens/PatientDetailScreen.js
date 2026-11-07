@@ -74,7 +74,7 @@ export default function PatientDetailScreen({ route, navigation }) {
   }, [patientId]);
 
   const fetchPatientLogs = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } = {} } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
     const { data, error } = await supabase
@@ -95,7 +95,7 @@ export default function PatientDetailScreen({ route, navigation }) {
 
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } = {} } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
       const { data: patientData, error: patientError } = await supabase

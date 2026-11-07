@@ -148,9 +148,19 @@ export default function RemindersScreen() {
   };
 
   const onChange = (event, selectedDate) => {
-    const currentDate = selectedDate || date;
     setShow(Platform.OS === 'ios');
-    setDate(currentDate);
+    if (!selectedDate) {
+      return;
+    }
+    if (mode === 'time') {
+      const nextDate = new Date(date);
+      nextDate.setHours(selectedDate.getHours(), selectedDate.getMinutes(), 0, 0);
+      setDate(nextDate);
+    } else {
+      const nextDate = new Date(selectedDate);
+      nextDate.setHours(date.getHours(), date.getMinutes(), 0, 0);
+      setDate(nextDate);
+    }
   };
 
   const showMode = (currentMode) => {
@@ -180,6 +190,7 @@ export default function RemindersScreen() {
       body,
       sound: true,
       priority: Notifications.AndroidNotificationPriority.HIGH,
+      channelId: REMINDER_CHANNEL_ID,
     };
 
     if (days.length) {
@@ -194,7 +205,6 @@ export default function RemindersScreen() {
             hour,
             minute,
             repeats: true,
-            channelId: REMINDER_CHANNEL_ID,
           },
         });
       }
@@ -206,7 +216,6 @@ export default function RemindersScreen() {
       content,
       trigger: {
         date: fireDate.getTime(),
-        channelId: REMINDER_CHANNEL_ID,
       },
     });
   };

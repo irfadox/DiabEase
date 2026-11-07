@@ -40,8 +40,9 @@ export default function ChatScreen({ route }) {
         };
 
         setupConversation();
+        const channelName = `chat_${userProfile?.id}_${targetId}`;
         const channel = supabase
-            .channel('chat_messages')
+            .channel(channelName)
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
                 if ((payload.new.sender_id === targetId && payload.new.receiver_id === userProfile?.id) ||
                     (payload.new.sender_id === userProfile?.id && payload.new.receiver_id === targetId)) {
@@ -62,10 +63,19 @@ export default function ChatScreen({ route }) {
   }, [targetId, userProfile]);
 
   const fetchInitialData = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-    setUserProfile(data);
-    setLoading(false);
+    try {
+      const { data: { user } = {} } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+      const { data } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
+      setUserProfile(data);
+    } catch (e) {
+      console.warn('ChatScreen fetchInitialData error:', e.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchPartnerProfile = async () => {

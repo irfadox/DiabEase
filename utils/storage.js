@@ -5,15 +5,16 @@ import { supabase } from './supabase';
  */
 export const saveLog = async (log) => {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } = {} } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
+    const normalizedVal = String(log.value ?? '0').trim().replace(',', '.');
     const { data, error } = await supabase
       .from('logs')
       .insert([
         {
           user_id: user.id,
-          sugar_level: parseFloat(log.value),
+          sugar_level: parseFloat(normalizedVal),
           notes: log.notes,
           status: log.status,
           timestamp: new Date().toISOString(),
@@ -31,7 +32,7 @@ export const saveLog = async (log) => {
 
 export const getLogs = async () => {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } = {} } = await supabase.auth.getUser();
     if (!user) return [];
 
     const { data, error } = await supabase
@@ -68,7 +69,7 @@ export const saveReminders = async (reminders) => {
 
 export const addReminder = async (reminder) => {
     try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } = {} } = await supabase.auth.getUser();
         if (!user) return null;
 
         const { data, error } = await supabase
@@ -90,7 +91,7 @@ export const addReminder = async (reminder) => {
 
 export const getReminders = async () => {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } = {} } = await supabase.auth.getUser();
     if (!user) return [];
 
     const { data, error } = await supabase
@@ -112,7 +113,7 @@ export const getReminders = async () => {
  */
 export const saveChatMessage = async (message) => {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } = {} } = await supabase.auth.getUser();
     if (!user || !message.receiver_id) return null;
 
     const { data, error } = await supabase
@@ -137,7 +138,7 @@ export const saveChatMessage = async (message) => {
 
 export const getChatHistory = async (partnerId) => {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } = {} } = await supabase.auth.getUser();
     if (!user || !partnerId) return [];
 
     const { data, error } = await supabase
@@ -159,7 +160,7 @@ export const getChatHistory = async (partnerId) => {
  */
 export const deleteLog = async (id) => {
     try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } = {} } = await supabase.auth.getUser();
         if (!user) return false;
 
         const { error } = await supabase
@@ -176,7 +177,7 @@ export const deleteLog = async (id) => {
 
 export const deleteReminder = async (id) => {
     try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } = {} } = await supabase.auth.getUser();
         if (!user) return false;
 
         const { error } = await supabase
