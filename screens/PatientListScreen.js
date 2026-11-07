@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { supabase } from '../utils/supabase';
-import { User, MessageSquare, Info } from 'lucide-react-native';
+import { User, MessageSquare, Info, LogOut } from 'lucide-react-native';
 import { useSettings } from '../context/SettingsContext';
 import { useLanguageContext } from '../context/LanguageContext';
 import LangPatientListScreen from '../lang/LangPatientListScreen';
@@ -16,24 +16,53 @@ export default function PatientListScreen({ navigation }) {
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const handleLogout = () => {
+    Alert.alert(common.attention || 'Выход', t.logoutConfirm || 'Вы действительно хотите выйти из аккаунта?', [
+      { text: common.cancel, style: 'cancel' },
+      {
+        text: common.delete || 'Выйти',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await supabase.auth.signOut();
+          } catch (e) {
+            console.error('Logout error:', e);
+          }
+        },
+      },
+    ]);
+  };
+
   useEffect(() => {
     fetchPatients();
     navigation.setOptions({
       headerRight: () => (
-        <TouchableOpacity
-          onPress={() => navigation.navigate('AboutProject')}
-          style={{ marginRight: 16 }}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Info size={22} color="#00BFA5" />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 16 }}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('AboutProject')}
+            style={{ marginRight: 14 }}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Info size={22} color="#00BFA5" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleLogout}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <LogOut size={20} color="#FF3B30" />
+          </TouchableOpacity>
+        </View>
       ),
     });
   }, [navigation, language]);
 
   const fetchPatients = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } = {} } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        return;
+      }
       
       const { data, error } = await supabase
         .from('profiles')

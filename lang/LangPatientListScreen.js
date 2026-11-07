@@ -4,6 +4,7 @@ export default {
     noDescription: 'Нет описания',
     emptyList: 'У вас пока нет назначенных пациентов',
     openChat: 'Открыть чат',
+    logoutConfirm: 'Вы действительно хотите выйти из аккаунта?',
   },
 
   en: {
@@ -11,6 +12,7 @@ export default {
     noDescription: 'No description',
     emptyList: 'You have no assigned patients yet',
     openChat: 'Open chat',
+    logoutConfirm: 'Are you sure you want to sign out?',
   },
 
   ky: {
@@ -18,5 +20,6 @@ export default {
     noDescription: 'Сүрөттөмө жок',
     emptyList: 'Сизде азырынча дайындалган бейтаптар жок',
     openChat: 'Чатты ачуу',
+    logoutConfirm: 'Чын эле аккаунттан чыккыңыз келеби?',
   },
 };

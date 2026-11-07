@@ -38,7 +38,8 @@ export default function AuthScreen() {
   const [description, setDescription] = useState('');
 
   const handleAuth = async () => {
-    if (!email || !password) {
+    const trimmedEmail = (email || '').trim();
+    if (!trimmedEmail || !password) {
       Alert.alert(common.error, t.errorFillFields);
       return;
     }
@@ -48,43 +49,74 @@ export default function AuthScreen() {
     try {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({
-          email,
+          email: trimmedEmail,
           password,
         });
         if (error) throw error;
       } else {
-        if (!fullName || !phoneNumber) {
+        const trimmedFullName = (fullName || '').trim();
+        const trimmedPhone = (phoneNumber || '').trim();
+        if (!trimmedFullName || !trimmedPhone) {
           Alert.alert(common.error, t.errorFillNamePhone);
           setLoading(false);
           return;
         }
 
         const { data: authData, error } = await supabase.auth.signUp({
-          email,
+          email: trimmedEmail,
           password,
           options: {
             data: {
-              full_name: fullName,
-              phone_number: phoneNumber,
+              full_name: trimmedFullName,
+              phone_number: trimmedPhone,
               role: role,
-              affiliation: affiliation,
-              description: description,
+              affiliation: role === 'doctor' ? (affiliation || '').trim() : null,
+              description: (description || '').trim() || null,
             },
           },
         });
         
         if (error) throw error;
 
+        // Check for duplicate account: Supabase returns user with empty identities when email already exists
+        const isDuplicate =
+          authData?.user &&
+          Array.isArray(authData.user.identities) &&
+          authData.user.identities.length === 0;
+
+        if (isDuplicate) {
+          Alert.alert(common.error, t.errorAccountExists);
+          setLoading(false);
+          return;
+        }
+
+        // Check if email confirmation is required (session is null)
+        if (!authData?.session) {
+          Alert.alert(
+            common.info || t.welcomeBack,
+            t.confirmEmailNotice || t.successAccountCreated,
+            [{ text: common.ok, onPress: () => setIsLogin(true) }]
+          );
+          setLoading(false);
+          return;
+        }
+
+        // If session is active immediately, Postgres trigger handle_new_user() creates the profile.
+        // We attempt an upsert safely only if user session is active:
         if (authData?.user) {
-           await supabase.from('profiles').upsert([{
-                id: authData.user.id,
-                email: email,
-                full_name: fullName,
-                phone_number: phoneNumber,
-                role: role,
-                affiliation: affiliation,
-                description: description,
-           }]);
+          try {
+            await supabase.from('profiles').upsert([{
+                 id: authData.user.id,
+                 email: trimmedEmail,
+                 full_name: trimmedFullName,
+                 phone_number: trimmedPhone,
+                 role: role,
+                 affiliation: role === 'doctor' ? (affiliation || '').trim() : null,
+                 description: (description || '').trim() || null,
+            }]);
+          } catch (profileErr) {
+            console.warn('Profile upsert fallback in AuthScreen:', profileErr.message);
+          }
         }
 
         Alert.alert(common.success, t.successAccountCreated);

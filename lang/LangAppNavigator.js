@@ -6,6 +6,9 @@ export default {
     reminders: "Напоминания",
     chat: "Чат",
     settings: "Настройки",
+    profileLoadError: "Не удалось загрузить профиль. Проверьте подключение к сети.",
+    retry: "Повторить",
+    logout: "Выйти",
   },
   en: {
     connecting: "Connecting to DiabEase...",
@@ -14,6 +17,9 @@ export default {
     reminders: "Reminders",
     chat: "Chat",
     settings: "Settings",
+    profileLoadError: "Failed to load profile. Please check your network connection.",
+    retry: "Retry",
+    logout: "Sign out",
   },
   ky: {
     connecting: "DiabEaseге туташуу...",
@@ -22,5 +28,8 @@ export default {
     reminders: "Эскертүүлөр",
     chat: "Чат",
     settings: "Жөндөөлөр",
+    profileLoadError: "Профиль жүктөлбөй калды. Тармак байланышын текшериңиз.",
+    retry: "Кайталоо",
+    logout: "Чыгуу",
   },
 };

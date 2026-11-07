@@ -1,5 +1,4 @@
-# Copy of .gitignore, with .env re-included at the bottom so EAS
-# Build can inline EXPO_PUBLIC_* the same way Expo Go does locally.
+# EAS build ignore file. Sensitive local .env files are excluded from upload.
 
 # dependencies
 node_modules/
@@ -40,7 +39,3 @@ yarn-error.*
 # generated native folders
 /ios
 /android
-
-# Upload the project .env so release builds have the same public
-# Supabase URL and anon key as Expo Go. Keep this last so it wins.
-!.env

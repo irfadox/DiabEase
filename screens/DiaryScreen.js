@@ -37,9 +37,14 @@ export default function DiaryScreen() {
   }, [isFocused]);
 
   const fetchProfile = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-    setUserProfile(data);
+    try {
+      const { data: { user } = {} } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
+      setUserProfile(data);
+    } catch (e) {
+      console.warn('DiaryScreen fetchProfile error:', e.message);
+    }
   };
 
   const loadData = async () => {
@@ -50,7 +55,7 @@ export default function DiaryScreen() {
   };
 
   const fetchOwnLogsForExport = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } = {} } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
     return getLogs();
   };
@@ -61,7 +66,8 @@ export default function DiaryScreen() {
       return;
     }
 
-    const value = parseFloat(sugar);
+    const normalizedSugar = (sugar || '').trim().replace(',', '.');
+    const value = parseFloat(normalizedSugar);
     let status = 'normal';
     if (!isNaN(value)) {
       if (value < minLimit) status = 'low';
@@ -69,7 +75,7 @@ export default function DiaryScreen() {
     }
 
     const newLogData = {
-      value: sugar || '0',
+      value: normalizedSugar || '0',
       notes: food || '',
       status,
     };

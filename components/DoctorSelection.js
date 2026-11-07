@@ -47,7 +47,8 @@ export default function DoctorSelection({ onSelect }) {
           text: t.confirmSelect, 
           onPress: async () => {
             try {
-              const { data: { user } } = await supabase.auth.getUser();
+              const { data: { user } = {} } = await supabase.auth.getUser();
+              if (!user) throw new Error('User not authenticated');
               const { error } = await supabase
                 .from('profiles')
                 .update({ assigned_doctor_id: doctor.id })
