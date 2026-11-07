@@ -2,127 +2,75 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  Image,
-  StyleSheet,
   TextInput,
   TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  ScrollView,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
-  ActivityIndicator,
-  Alert
 } from 'react-native';
 import { supabase } from '../utils/supabase';
-import { User, Mail, Lock, Briefcase, FileText, ChevronRight } from 'lucide-react-native';
-import { useSettings } from '../context/SettingsContext';
-import { useLanguageContext, AVAILABLE_LANGUAGES } from '../context/LanguageContext';
-import LangAuthScreen from '../lang/LangAuthScreen';
-import LangCommon from '../lang/LangCommon';
-import LanguageSwitcher from '../components/LanguageSwitcher';
+import { showAlert } from '../utils/alert';
 
-export default function AuthScreen() {
-  const { getAdjustedFontSize } = useSettings();
-  const { language, setLanguage } = useLanguageContext();
-  const t = LangAuthScreen[language];
-  const common = LangCommon[language];
-
+export default function AuthScreen({ navigation }) {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
-  
+
+  // Общие поля
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('doctor'); // по умолчанию для тестов ставим врача
+
+  // Дополнительные поля регистрации
   const [fullName, setFullName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [role, setRole] = useState('patient');
+  const [phone, setPhone] = useState('');
   const [affiliation, setAffiliation] = useState('');
   const [description, setDescription] = useState('');
 
   const handleAuth = async () => {
-    const trimmedEmail = (email || '').trim();
-    if (!trimmedEmail || !password) {
-      Alert.alert(common.error, t.errorFillFields);
+    if (!email.trim() || !password.trim()) {
+      showAlert('Ошибка', 'Введите email и пароль');
       return;
     }
 
     setLoading(true);
-
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: trimmedEmail,
-          password,
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password: password.trim(),
         });
+
         if (error) throw error;
       } else {
-        const trimmedFullName = (fullName || '').trim();
-        const trimmedPhone = (phoneNumber || '').trim();
-        if (!trimmedFullName || !trimmedPhone) {
-          Alert.alert(common.error, t.errorFillNamePhone);
+        if (!fullName.trim()) {
+          showAlert('Ошибка', 'Укажите ваше имя');
           setLoading(false);
           return;
         }
 
-        const { data: authData, error } = await supabase.auth.signUp({
-          email: trimmedEmail,
-          password,
+        const { data, error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password: password.trim(),
           options: {
             data: {
-              full_name: trimmedFullName,
-              phone_number: trimmedPhone,
+              full_name: fullName.trim(),
+              phone: phone.trim(),
               role: role,
-              affiliation: role === 'doctor' ? (affiliation || '').trim() : null,
-              description: (description || '').trim() || null,
+              affiliation: affiliation.trim(),
+              description: description.trim(),
             },
           },
         });
-        
+
         if (error) throw error;
 
-        // Check for duplicate account: Supabase returns user with empty identities when email already exists
-        const isDuplicate =
-          authData?.user &&
-          Array.isArray(authData.user.identities) &&
-          authData.user.identities.length === 0;
-
-        if (isDuplicate) {
-          Alert.alert(common.error, t.errorAccountExists);
-          setLoading(false);
-          return;
-        }
-
-        // Check if email confirmation is required (session is null)
-        if (!authData?.session) {
-          Alert.alert(
-            common.info || t.welcomeBack,
-            t.confirmEmailNotice || t.successAccountCreated,
-            [{ text: common.ok, onPress: () => setIsLogin(true) }]
-          );
-          setLoading(false);
-          return;
-        }
-
-        // If session is active immediately, Postgres trigger handle_new_user() creates the profile.
-        // We attempt an upsert safely only if user session is active:
-        if (authData?.user) {
-          try {
-            await supabase.from('profiles').upsert([{
-                 id: authData.user.id,
-                 email: trimmedEmail,
-                 full_name: trimmedFullName,
-                 phone_number: trimmedPhone,
-                 role: role,
-                 affiliation: role === 'doctor' ? (affiliation || '').trim() : null,
-                 description: (description || '').trim() || null,
-            }]);
-          } catch (profileErr) {
-            console.warn('Profile upsert fallback in AuthScreen:', profileErr.message);
-          }
-        }
-
-        Alert.alert(common.success, t.successAccountCreated);
+        showAlert('Успешно', 'Регистрация прошла успешно!');
       }
-    } catch (error) {
-      Alert.alert(t.errorAuth, error.message);
+    } catch (err) {
+      console.error('Auth error:', err);
+      showAlert('Ошибка авторизации', err.message || 'Произошла ошибка при входе');
     } finally {
       setLoading(false);
     }
@@ -130,142 +78,117 @@ export default function AuthScreen() {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <View style={styles.logoContainer}>
-            <Image source={require('../assets/icon.png')} style={styles.logoImage} />
-          </View>
-          <Text style={[styles.title, { fontSize: getAdjustedFontSize(28) }]}>{isLogin ? t.welcomeBack : t.createAccount}</Text>
-          <Text style={[styles.subtitle, { fontSize: getAdjustedFontSize(16) }]}>
-            {isLogin ? t.loginSubtitle : t.signupSubtitle}
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <View style={styles.card}>
+          <Text style={styles.title}>{isLogin ? 'Вход в DiabEase' : 'Создайте аккаунт'}</Text>
+          <Text style={styles.subtitle}>
+            {isLogin ? 'Войдите для доступа к данным' : 'Начните заботу о здоровье прямо сейчас'}
           </Text>
-        </View>
 
-        <View style={styles.languageSection}>
-          <Text style={[styles.languageLabel, { fontSize: getAdjustedFontSize(14) }]}>{t.languageTitle}</Text>
-          <LanguageSwitcher
-            languages={AVAILABLE_LANGUAGES}
-            language={language}
-            onChange={setLanguage}
-            fontSize={getAdjustedFontSize(13)}
-          />
-        </View>
-
-        <View style={styles.form}>
-          <View style={styles.inputWrapper}>
-            <Mail size={20} color="#00BFA5" style={styles.inputIcon} />
-            <TextInput
-              style={[styles.input, { fontSize: getAdjustedFontSize(16) }]}
-              placeholder={t.emailPlaceholder}
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-          </View>
-
-          <View style={styles.inputWrapper}>
-            <Lock size={20} color="#00BFA5" style={styles.inputIcon} />
-            <TextInput
-              style={[styles.input, { fontSize: getAdjustedFontSize(16) }]}
-              placeholder={t.passwordPlaceholder}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
-          </View>
+          {/* Переключатель роли при регистрации */}
+          {!isLogin && (
+            <View style={styles.roleContainer}>
+              <TouchableOpacity
+                style={[styles.roleBtn, role === 'patient' && styles.roleBtnActive]}
+                onPress={() => setRole('patient')}
+              >
+                <Text style={[styles.roleText, role === 'patient' && styles.roleTextActive]}>
+                  Пациент
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.roleBtn, role === 'doctor' && styles.roleBtnActive]}
+                onPress={() => setRole('doctor')}
+              >
+                <Text style={[styles.roleText, role === 'doctor' && styles.roleTextActive]}>
+                  Врач
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           {!isLogin && (
+            <TextInput
+              style={styles.input}
+              placeholder="ФИО / Имя"
+              placeholderTextColor="#888"
+              value={fullName}
+              onChangeText={setFullName}
+            />
+          )}
+
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            placeholderTextColor="#888"
+            autoCapitalize="none"
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+          />
+
+          <TextInput
+            style={styles.input}
+            placeholder="Пароль"
+            placeholderTextColor="#888"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+          />
+
+          {!isLogin && (
+            <TextInput
+              style={styles.input}
+              placeholder="Номер телефона"
+              placeholderTextColor="#888"
+              keyboardType="phone-pad"
+              value={phone}
+              onChangeText={setPhone}
+            />
+          )}
+
+          {!isLogin && role === 'doctor' && (
             <>
-              <View style={styles.inputWrapper}>
-                <User size={20} color="#00BFA5" style={styles.inputIcon} />
-                <TextInput
-                  style={[styles.input, { fontSize: getAdjustedFontSize(16) }]}
-                  placeholder={t.fullNamePlaceholder}
-                  value={fullName}
-                  onChangeText={setFullName}
-                />
-              </View>
-
-              <View style={styles.inputWrapper}>
-                <Briefcase size={20} color="#00BFA5" style={styles.inputIcon} />
-                <TextInput
-                  style={[styles.input, { fontSize: getAdjustedFontSize(16) }]}
-                  placeholder={t.phonePlaceholder}
-                  value={phoneNumber}
-                  onChangeText={setPhoneNumber}
-                  keyboardType="phone-pad"
-                />
-              </View>
-
-              <View style={styles.roleContainer}>
-                <Text style={[styles.label, { fontSize: getAdjustedFontSize(14) }]}>{t.registerAs}</Text>
-                <View style={styles.roleButtons}>
-                  <TouchableOpacity
-                    style={[styles.roleButton, role === 'patient' && styles.roleButtonActive]}
-                    onPress={() => setRole('patient')}
-                  >
-                    <Text style={[styles.roleButtonText, role === 'patient' && styles.roleButtonTextActive, { fontSize: getAdjustedFontSize(14) }]}>{t.patient}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.roleButton, role === 'doctor' && styles.roleButtonActive]}
-                    onPress={() => setRole('doctor')}
-                  >
-                    <Text style={[styles.roleButtonText, role === 'doctor' && styles.roleButtonTextActive, { fontSize: getAdjustedFontSize(14) }]}>{t.doctor}</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              {role === 'doctor' && (
-                <View style={styles.inputWrapper}>
-                  <Briefcase size={20} color="#00BFA5" style={styles.inputIcon} />
-                  <TextInput
-                    style={[styles.input, { fontSize: getAdjustedFontSize(16) }]}
-                    placeholder={t.affiliationPlaceholder}
-                    value={affiliation}
-                    onChangeText={setAffiliation}
-                  />
-                </View>
-              )}
-
-              <View style={[styles.inputWrapper, styles.textAreaWrapper]}>
-                <FileText size={20} color="#00BFA5" style={[styles.inputIcon, { marginTop: 12 }]} />
-                <TextInput
-                  style={[styles.input, styles.textArea, { fontSize: getAdjustedFontSize(16) }]}
-                  placeholder={role === 'doctor' ? t.doctorDescPlaceholder : t.patientDescPlaceholder}
-                  value={description}
-                  onChangeText={setDescription}
-                  multiline
-                  numberOfLines={3}
-                />
-              </View>
+              <TextInput
+                style={styles.input}
+                placeholder="Клиника / Организация"
+                placeholderTextColor="#888"
+                value={affiliation}
+                onChangeText={setAffiliation}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Специализация / Должность"
+                placeholderTextColor="#888"
+                value={description}
+                onChangeText={setDescription}
+              />
             </>
           )}
 
           <TouchableOpacity
-            style={styles.authButton}
+            style={styles.primaryBtn}
             onPress={handleAuth}
             disabled={loading}
           >
             {loading ? (
-              <ActivityIndicator color="white" />
+              <ActivityIndicator color="#fff" />
             ) : (
-              <>
-                <Text style={[styles.authButtonText, { fontSize: getAdjustedFontSize(18) }]}>{isLogin ? t.login : t.signup}</Text>
-                <ChevronRight size={20} color="white" />
-              </>
+              <Text style={styles.primaryBtnText}>
+                {isLogin ? 'Войти' : 'Зарегистрироваться'}
+              </Text>
             )}
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.switchButton}
+            style={styles.switchBtn}
             onPress={() => setIsLogin(!isLogin)}
           >
-            <Text style={[styles.switchText, { fontSize: getAdjustedFontSize(14) }]}>
-              {isLogin ? t.noAccount : t.hasAccount}
+            <Text style={styles.switchText}>
+              {isLogin ? 'Нет аккаунта? Зарегистрироваться' : 'Уже есть аккаунт? Войдите'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -277,143 +200,89 @@ export default function AuthScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#121716',
   },
-  scrollContent: {
-    padding: 24,
-    paddingTop: 80,
-  },
-  header: {
+  scroll: {
+    flexGrow: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 40,
+    padding: 20,
   },
-  logoContainer: {
-    width: 72,
-    height: 72,
-    borderRadius: 18,
-    overflow: 'hidden',
-    marginBottom: 20,
-    elevation: 4,
-    shadowColor: '#00BFA5',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  logoImage: {
+  card: {
     width: '100%',
-    height: '100%',
+    maxWidth: 420,
+    backgroundColor: '#1c2423',
+    padding: 24,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#2b3836',
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'BOLD',
-    color: '#1A1A1A',
-    marginBottom: 8,
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#00cc96',
+    textAlign: 'center',
+    marginBottom: 6,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 14,
+    color: '#9ba3a1',
     textAlign: 'center',
-  },
-  languageSection: {
-    marginBottom: 24,
-    paddingHorizontal: 4,
-  },
-  languageLabel: {
-    color: '#666',
-    marginBottom: 10,
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  form: {
-    width: '100%',
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F5F7FA',
-    borderRadius: 12,
-    marginBottom: 16,
-    paddingHorizontal: 16,
-    height: 56,
-    borderWidth: 1,
-    borderColor: '#E1E5EB',
-  },
-  inputIcon: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#1A1A1A',
-  },
-  textAreaWrapper: {
-    height: 100,
-    alignItems: 'flex-start',
-  },
-  textArea: {
-    paddingTop: 16,
-    textAlignVertical: 'top',
-  },
-  roleContainer: {
     marginBottom: 20,
   },
-  label: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
-    marginLeft: 4,
-  },
-  roleButtons: {
+  roleContainer: {
     flexDirection: 'row',
-    gap: 12,
+    marginBottom: 16,
+    borderRadius: 10,
+    backgroundColor: '#121716',
+    padding: 4,
   },
-  roleButton: {
+  roleBtn: {
     flex: 1,
-    height: 44,
-    borderRadius: 22,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  roleBtnActive: {
+    backgroundColor: '#00cc96',
+  },
+  roleText: {
+    color: '#9ba3a1',
+    fontWeight: '600',
+  },
+  roleTextActive: {
+    color: '#121716',
+    fontWeight: 'bold',
+  },
+  input: {
+    backgroundColor: '#121716',
     borderWidth: 1,
-    borderColor: '#00BFA5',
-    justifyContent: 'center',
+    borderColor: '#2b3836',
+    color: '#fff',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    marginBottom: 12,
+  },
+  primaryBtn: {
+    backgroundColor: '#00cc96',
+    borderRadius: 10,
+    paddingVertical: 14,
     alignItems: 'center',
-    backgroundColor: 'transparent',
+    marginTop: 10,
   },
-  roleButtonActive: {
-    backgroundColor: '#00BFA5',
+  primaryBtnText: {
+    color: '#121716',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
-  roleButtonText: {
-    color: '#00BFA5',
-    fontWeight: '600',
-  },
-  roleButtonTextActive: {
-    color: 'white',
-  },
-  authButton: {
-    backgroundColor: '#00BFA5',
-    height: 56,
-    borderRadius: 12,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 8,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
-  authButtonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: '600',
-    marginRight: 8,
-  },
-  switchButton: {
-    marginTop: 20,
+  switchBtn: {
+    marginTop: 16,
     alignItems: 'center',
   },
   switchText: {
-    color: '#00BFA5',
+    color: '#00cc96',
     fontSize: 14,
-    fontWeight: '500',
   },
 });

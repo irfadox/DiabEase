@@ -61,7 +61,7 @@ export default function PatientDetailScreen({ route, navigation }) {
             }
 
             return [payload.new, ...previousLogs].sort(
-              (first, second) => new Date(second.timestamp) - new Date(first.timestamp)
+              (first, second) => new Date(second.created_at || second.timestamp) - new Date(first.created_at || first.timestamp)
             );
           });
         }
@@ -81,7 +81,7 @@ export default function PatientDetailScreen({ route, navigation }) {
       .from('logs')
       .select('*')
       .eq('user_id', patientId)
-      .order('timestamp', { ascending: false });
+      .order('created_at', { ascending: false });
 
     if (error) throw error;
     return data || [];
